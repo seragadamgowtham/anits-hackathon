@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GATE Master AI System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Exam Notes Styling */
+        .prose h3 {
+            color: #1e40af;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .prose ul {
+            list-style-type: disc;
+            padding-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .prose li {
+            margin-bottom: 0.25rem;
+        }
+
+        .prose strong {
+            color: #b91c1c;
+        }
+
+        .prose p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen text-gray-800 font-sans selection:bg-blue-200">
+
+    <nav class="bg-slate-900 text-white shadow-lg sticky top-0 z-40">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="bg-blue-600 p-2 rounded-lg">
+                    <i class="fas fa-brain text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wider leading-none">GATE<span
+                            class="text-blue-400">MASTER</span></h1>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-widest">AI Learning System</p>
+                </div>
+            </div>
+
+            {% if session.user_id %}
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-3 text-right">
+                    <div class="hidden md:block">
+                        <div class="text-sm font-bold">{{ session.name }}</div>
+                        <div class="text-xs text-gray-400 uppercase">{{ session.role }}</div>
+                    </div>
+                    {% if session.profile_pic %}
+                    <img src="{{ session.profile_pic }}"
+                        class="w-10 h-10 rounded-full border-2 border-blue-500 object-cover">
+                    {% else %}
+                    <div class="w-10 h-10 rounded-full bg-blue-700 flex items-center justify-center font-bold text-sm">
+                        {{ session.name[0] }}
+                    </div>
+                    {% endif %}
+                </div>
+                <a href="/logout"
+                    class="bg-red-500/20 hover:bg-red-500 hover:text-white text-red-400 px-4 py-2 rounded-lg text-xs font-bold transition duration-200 border border-red-500/50">
+                    <i class="fas fa-sign-out-alt mr-2"></i>LOGOUT
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </nav>
+
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="container mx-auto mt-6 px-6 relative z-30">
+        {% for message in messages %}
+        <div
+            class="bg-white border-l-4 border-blue-500 text-gray-700 p-4 rounded shadow-md mb-3 flex items-center justify-between animate-fade">
+            <div class="flex items-center">
+                <i class="fas fa-info-circle text-blue-500 mr-3 text-xl"></i>
+                <span>{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-gray-400 hover:text-gray-600"><i
+                    class="fas fa-times"></i></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    {% if view == 'login' %}
+    <div
+        class="flex justify-center items-center min-h-[85vh] px-4 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md relative overflow-hidden animate-fade">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 to-purple-600"></div>
+
+            <h2 class="text-3xl font-bold text-center mb-8 text-slate-800">Welcome Back</h2>
+
+            <div class="flex bg-gray-100 p-1 rounded-xl mb-8 relative">
+                <button onclick="toggleForm('login')" id="tab-login"
+                    class="w-1/2 py-2 rounded-lg text-sm font-bold transition-all shadow bg-white text-blue-600">Login</button>
+                <button onclick="toggleForm('register')" id="tab-register"
+                    class="w-1/2 py-2 rounded-lg text-sm font-bold text-gray-500 hover:text-gray-700 transition-all">Register</button>
+            </div>
+
+            <form action="/auth" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <input type="hidden" name="action" id="auth-action" value="login">
+
+                <div class="grid grid-cols-2 gap-3 mb-2">
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="role" value="student" checked class="peer sr-only">
+                        <div
+                            class="text-center p-3 rounded-xl border-2 border-gray-200 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all">
+                            <i
+                                class="fas fa-user-graduate block text-xl mb-1 text-gray-400 peer-checked:text-blue-600"></i>
+                            <span class="text-xs font-bold text-gray-500 peer-checked:text-blue-800">Student</span>
+                        </div>
+                    </label>
+                    <label class="cursor-pointer relative">
+                        <input type="radio" name="role" value="teacher" class="peer sr-only">
+                        <div
+                            class="text-center p-3 rounded-xl border-2 border-gray-200 peer-checked:border-purple-500 peer-checked:bg-purple-50 transition-all">
+                            <i
+                                class="fas fa-chalkboard-teacher block text-xl mb-1 text-gray-400 peer-checked:text-purple-600"></i>
+                            <span class="text-xs font-bold text-gray-500 peer-checked:text-purple-800">Teacher</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="text" name="name" placeholder="Full Name" required
+                            class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                    </div>
+
+                    <div id="roll-field" class="relative">
+                        <i class="fas fa-id-card absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="text" name="roll_no" placeholder="Roll Number"
+                            class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                    </div>
+
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-3 top-3.5 text-gray-400"></i>
+                        <input type="password" name="password" placeholder="Password" required
+                            class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                    </div>
+
+                    <div id="pic-field" class="hidden">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 ml-1">Profile Picture</label>
+                        <input type="file" name="profile_pic" accept="image/*"
+                            class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                    </div>
+                </div>
+
+                <button id="submit-btn"
+                    class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3 rounded-lg shadow-lg transform transition hover:-translate-y-0.5 mt-6">
+                    LOGIN TO PORTAL
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleForm(mode) {
+            const isLogin = mode === 'login';
+            document.getElementById('auth-action').value = mode;
+
+            // Tab Styling
+            const tabLogin = document.getElementById('tab-login');
+            const tabReg = document.getElementById('tab-register');
+            const activeClass = "shadow bg-white text-blue-600";
+            const inactiveClass = "text-gray-500 hover:text-gray-700";
+
+            tabLogin.className = `w-1/2 py-2 rounded-lg text-sm font-bold transition-all ${isLogin ? activeClass : inactiveClass}`;
+            tabReg.className = `w-1/2 py-2 rounded-lg text-sm font-bold transition-all ${!isLogin ? activeClass : inactiveClass}`;
+
+            // Field Visibility
+            document.getElementById('pic-field').style.display = isLogin ? 'none' : 'block';
+            document.getElementById('submit-btn').textContent = isLogin ? 'LOGIN TO PORTAL' : 'CREATE ACCOUNT';
+        }
+    </script>
+
+    {% elif view == 'teacher_dash' %}
+    <div class="container mx-auto px-6 py-8">
+        <div class="grid lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1">
+                <div class="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 sticky top-24">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div
+                            class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h2 class="text-xl font-bold text-gray-800">Create Material</h2>
+                    </div>
+
+                    <form action="/upload" method="POST" enctype="multipart/form-data" class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase ml-1">Subject</label>
+                            <select name="subject" id="subject-select" onchange="updateTopics()" required
+                                class="w-full p-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
+                                <option value="" class="bg-white text-gray-500">-- Select Subject --</option>
+                                {% if syllabus %}
+                                {% for subject in syllabus.keys() %}
+                                <option value="{{ subject }}" class="bg-white text-gray-900">{{ subject }}</option>
+                                {% endfor %}
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase ml-1">Chapter</label>
+                            <select name="chapter" id="chapter-select" onchange="updateSubTopics()" required
+                                class="w-full p-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
+                                <option value="" class="bg-white text-gray-500">-- Select Chapter --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-gray-500 uppercase ml-1">Topic</label>
+                            <select name="topic" id="topic-select" required
+                                class="w-full p-3 bg-white text-gray-900 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none">
+                                <option value="" class="bg-white text-gray-500">-- Select Topic --</option>
+                            </select>
+                        </div>
+
+                        <div
+                            class="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center hover:bg-gray-50 transition-colors cursor-pointer relative group">
+                            <input type="file" name="files" multiple accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg"
+                                class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <i
+                                class="fas fa-file-pdf text-3xl text-gray-300 mb-2 group-hover:text-purple-400 transition-colors"></i>
+                            <p class="text-sm font-medium text-gray-600">Drop files here (Optional) or click</p>
+                            <p class="text-xs text-gray-400 mt-1">PDF, DOCX, Images, TXT supported</p>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg shadow-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-magic"></i> GENERATE ASSIGNMENT (Ai Tutor)
+                        </button>
+                        <p class="text-xs text-center text-gray-400 mt-2">
+                            <i class="fas fa-robot mr-1"></i> Generates 10 Basic MCQs strictly from your PDF.
+                        </p>
+                    </form>
+                </div>
+            </div>
+
+            <div class="lg:col-span-2 space-y-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-history text-gray-400 text-lg"></i> Recent Assignments
+                </h2>
+
+                {% for a in assignments %}
+                <div
+                    class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow flex justify-between items-center group">
+                    <div class="flex items-center gap-4">
+                        <div
+                            class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xl">
+                            {{ a.subject[0] }}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-lg group-hover:text-blue-600 transition-colors">{{
+                                a.topic }}</h3>
+                            <p class="text-sm text-gray-500"><i class="fas fa-book mr-1"></i> {{ a.subject }}</p>
+                        </div>
+                    </div>
+
+                    <div class="text-right">
+                        {% if a.processing_status == 'READY' %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                            <i class="fas fa-check-circle"></i> READY
+                        </span>
+                        <div class="flex gap-2 mt-2 justify-end">
+                            <button onclick="viewAssignmentResults('{{ a.id }}')"
+                                class="text-xs text-purple-600 hover:text-purple-800 font-bold underline"
+                                title="View Student Results">
+                                <i class="fas fa-chart-bar"></i> Results
+                            </button>
+                            <button onclick="viewSolutions('{{ a.id }}')"
+                                class="text-xs text-blue-600 hover:text-blue-800 font-bold underline"
+                                title="View Answer Key">
+                                <i class="fas fa-key"></i> Key
+                            </button>
+                            <a href="/delete_assignment/{{ a.id }}"
+                                onclick="return confirm('Are you sure you want to delete this assignment? results will also be lost.')"
+                                class="text-xs text-red-500 hover:text-red-700 font-bold underline"
+                                title="Delete Assignment">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                        <!-- Embed Data -->
+                        <div id="quiz-data-{{ a.id }}" class="hidden">{{ a.ai_quiz }}</div>
+                        {% elif a.processing_status == 'ERROR' %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
+                            <i class="fas fa-exclamation-circle"></i> FAILED
+                        </span>
+                        <a href="/delete_assignment/{{ a.id }}"
+                            onclick="return confirm('Delete this failed assignment?')"
+                            class="block mt-2 text-xs text-red-500 hover:text-red-700 font-bold underline">
+                            <i class="fas fa-trash"></i> Delete
+                        </a>
+                        {% else %}
+                        <span
+                            class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-yellow-100 text-yellow-700 animate-pulse">
+                            <i class="fas fa-cog fa-spin"></i> PROCESSING
+                        </span>
+                        {% endif %}
+                        <div class="text-xs text-gray-400 mt-1">ID: #{{ a.id }}</div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+                    <i class="fas fa-folder-open text-4xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500 font-medium">No assignments created yet.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Answer Key Modal -->
+    <div id="key-modal"
+        class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl max-h-[80vh] rounded-2xl shadow-2xl flex flex-col">
+            <div class="p-4 border-b bg-slate-50 flex justify-between items-center rounded-t-2xl">
+                <h3 class="font-bold text-lg text-slate-800"><i class="fas fa-key text-blue-500 mr-2"></i> Answer Key
+                </h3>
+                <button onclick="document.getElementById('key-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="key-content" class="p-6 overflow-y-auto space-y-4">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Results Modal -->
+    <div id="results-modal"
+        class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-2xl max-h-[80vh] rounded-2xl shadow-2xl flex flex-col">
+            <div class="p-4 border-b bg-purple-50 flex justify-between items-center rounded-t-2xl">
+                <h3 class="font-bold text-lg text-purple-900"><i class="fas fa-poll text-purple-600 mr-2"></i> Student
+                    Performance</h3>
+                <button onclick="document.getElementById('results-modal').classList.add('hidden')"
+                    class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="results-content" class="p-0 overflow-y-auto">
+                <div class="p-10 text-center text-gray-500">
+                    <i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i><br>Loading...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function viewSolutions(id) {
+            const dataEl = document.getElementById('quiz-data-' + id);
+            if (!dataEl) return;
+
+            try {
+                const quiz = JSON.parse(dataEl.textContent);
+                const container = document.getElementById('key-content');
+
+                if (!quiz || quiz.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-500">No quiz data available.</p>';
+                } else {
+                    container.innerHTML = quiz.map((q, i) => `
+                        <div class="border-b border-gray-100 pb-4 last:border-0">
+                            <p class="font-bold text-sm text-gray-800 mb-2"><span class="text-blue-600 mr-1">Q${i + 1}.</span> ${q.q}</p>
+                            <ul class="text-xs space-y-1 ml-4 text-gray-600">
+                                ${q.options.map((opt, oi) => `
+                                    <li class="${oi === q.correct_index ? 'text-green-700 font-bold bg-green-50 p-1 rounded' : ''}">
+                                        ${String.fromCharCode(65 + oi)}. ${opt} 
+                                        ${oi === q.correct_index ? '<i class="fas fa-check ml-1"></i>' : ''}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                   `).join('');
+                }
+
+                document.getElementById('key-modal').classList.remove('hidden');
+
+            } catch (e) {
+                alert("Error loading solution key");
+            }
+        }
+
+        async function viewAssignmentResults(id) {
+            const modal = document.getElementById('results-modal');
+            const content = document.getElementById('results-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = '<div class="p-10 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin text-2xl mb-2"></i><br>Loading...</div>';
+
+            try {
+                const res = await fetch(`/api/results/${id}`);
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    content.innerHTML = `
+                        <div class="flex flex-col items-center justify-center p-10 text-gray-400">
+                            <i class="fas fa-users-slash text-4xl mb-2"></i>
+                            <p>No students have submitted yet.</p>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3">Student Name</th>
+                                    <th class="px-6 py-3">Roll No</th>
+                                    <th class="px-6 py-3">Score</th>
+                                    <th class="px-6 py-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.map(r => `
+                                    <tr class="bg-white border-b hover:bg-gray-50">
+                                        <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">${r.name}</td>
+                                        <td class="px-6 py-4">${r.roll_no}</td>
+                                        <td class="px-6 py-4 font-bold ${r.score >= 5 ? 'text-green-600' : 'text-red-500'}">
+                                            ${r.score} / 10
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            ${r.status === 'CHEATING_DETECTED'
+                            ? '<span class="bg-red-100 text-red-800 text-xs font-medium px-2.5 py-0.5 rounded border border-red-400">MALPRACTICE</span>'
+                            : '<span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">COMPLETED</span>'}
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    `;
+                }
+            } catch (e) {
+                content.innerHTML = '<div class="text-red-500 p-6 text-center">Error loading results.</div>';
+            }
+        }
+    </script>
+    </div>
+    <script id="syllabus-data" type="application/json">
+        {{ syllabus | tojson | safe }}
+    </script>
+    <script>
+        function updateTopics() {
+            var subjectSelect = document.getElementById('subject-select');
+            var chapterSelect = document.getElementById('chapter-select');
+            var topicSelect = document.getElementById('topic-select');
+            var syllabusData = JSON.parse(document.getElementById('syllabus-data').textContent);
+
+            var subjectValue = subjectSelect.value;
+
+            chapterSelect.innerHTML = '<option value="" class="bg-white text-gray-500">-- Select Chapter --</option>';
+            topicSelect.innerHTML = '<option value="" class="bg-white text-gray-500">-- Select Topic --</option>';
+
+            if (subjectValue && syllabusData[subjectValue]) {
+                var chapters = Object.keys(syllabusData[subjectValue]);
+                chapters.forEach(function (chapter) {
+                    chapterSelect.innerHTML += '<option value="' + chapter + '" class="bg-white text-gray-900">' + chapter + '</option>';
+                });
+            }
+        }
+
+        function updateSubTopics() {
+            var subjectSelect = document.getElementById('subject-select');
+            var chapterSelect = document.getElementById('chapter-select');
+            var topicSelect = document.getElementById('topic-select');
+            var syllabusData = JSON.parse(document.getElementById('syllabus-data').textContent);
+
+            var subjectValue = subjectSelect.value;
+            var chapterValue = chapterSelect.value;
+
+            topicSelect.innerHTML = '<option value="" class="bg-white text-gray-500">-- Select Topic --</option>';
+
+            if (subjectValue && chapterValue && syllabusData[subjectValue][chapterValue]) {
+                var topics = syllabusData[subjectValue][chapterValue];
+                topics.forEach(function (topic) {
+                    topicSelect.innerHTML += '<option value="' + topic + '" class="bg-white text-gray-900">' + topic + '</option>';
+                });
+            }
+        }
+    </script>
+
+    {% elif view == 'student_dash' %}
+    <div class="container mx-auto px-6 py-8 relative">
+
+        <div
+            class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-8 text-white shadow-xl mb-10 relative overflow-hidden">
+            <div class="absolute right-0 top-0 h-full w-1/3 bg-white/5 skew-x-12 transform origin-bottom-right"></div>
+            <div class="flex flex-col md:flex-row justify-between items-center relative z-10">
+                <div>
+                    <h1 class="text-3xl font-bold mb-2">My Learning Dashboard</h1>
+                    <p class="text-blue-200">Consistency is the key to cracking GATE.</p>
+                </div>
+                <div class="mt-6 md:mt-0 flex gap-6">
+                    <div class="text-center bg-white/10 p-4 rounded-xl backdrop-blur-sm">
+                        <div class="text-xs uppercase tracking-widest text-blue-300 mb-1">Current CGPA</div>
+                        <div class="text-3xl font-bold">{{ cgpa }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <i class="fas fa-layer-group text-blue-500"></i> Available Modules
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+            {% for a in assignments %}
+            <div
+                class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col h-full">
+                <div class="p-6 flex-grow">
+                    <div class="flex justify-between items-start mb-4">
+                        <span
+                            class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 px-2 py-1 rounded-md">{{
+                            a.subject }}</span>
+                        {% if a.status == 'DONE' %}
+                        <i class="fas fa-check-circle text-green-500 text-xl"></i>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mb-2 leading-tight">{{ a.topic }}</h3>
+                    <p class="text-xs text-gray-400">Uploaded on {{ a.upload_timestamp }}</p>
+                </div>
+
+                <div class="p-4 border-t border-gray-50 bg-gray-50/50 rounded-b-xl">
+                    {% if a.status == 'OPEN' %}
+                    <a href="/exam/{{ a.id }}"
+                        class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg shadow transition-colors">
+                        START EXAM <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                    {% elif a.status == 'DONE' %}
+                    <div class="flex justify-between items-center px-2">
+                        <span class="text-sm font-medium text-gray-500">Score Achieved</span>
+                        <span class="text-lg font-bold text-slate-800">{{ a.score }} / 10</span>
+                    </div>
+                    {% else %}
+                    <button disabled
+                        class="w-full bg-gray-200 text-gray-400 font-bold py-2.5 rounded-lg cursor-not-allowed">
+                        <i class="fas fa-clock mr-1"></i> PROCESSING...
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <button onclick="document.getElementById('ai-chat-modal').classList.remove('hidden')"
+            class="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-2xl z-50 flex items-center justify-center transition-transform hover:scale-110 group">
+            <i class="fas fa-robot text-2xl"></i>
+            <span
+                class="absolute right-full mr-4 bg-gray-900 text-white text-xs px-3 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Ask
+                AI Tutor</span>
+        </button>
+
+        <div id="ai-chat-modal"
+            class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+            <div
+                class="bg-white w-full max-w-2xl h-[600px] rounded-2xl shadow-2xl flex flex-col relative overflow-hidden">
+                <div class="bg-blue-900 p-4 text-white flex justify-between items-center shrink-0">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-white/20 p-2 rounded-full"><i class="fas fa-robot"></i></div>
+                        <div>
+                            <h3 class="font-bold">GATE AI Tutor</h3>
+                            <p class="text-xs text-blue-200">Ask doubts or upload problem images</p>
+                        </div>
+                    </div>
+                    <button onclick="document.getElementById('ai-chat-modal').classList.add('hidden')"
+                        class="hover:bg-white/20 p-2 rounded-full transition"><i class="fas fa-times"></i></button>
+                </div>
+
+                <div id="chat-history" class="flex-grow overflow-y-auto p-6 space-y-4 bg-gray-50">
+                    <div class="flex gap-3">
+                        <div
+                            class="w-8 h-8 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-white text-xs">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div
+                            class="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-gray-100 max-w-[80%]">
+                            Hello! I am your AI Tutor. You can upload an image of a question or ask me about any GATE
+                            topic.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-white border-t shrink-0">
+                    <form id="chat-form" class="relative">
+                        <div id="file-preview"
+                            class="hidden mb-2 p-2 bg-gray-100 rounded flex justify-between items-center text-xs">
+                            <span id="filename-display" class="truncate max-w-[200px]"></span>
+                            <button type="button" onclick="clearFile()" class="text-red-500"><i
+                                    class="fas fa-times"></i></button>
+                        </div>
+
+                        <div class="flex gap-2">
+                            <label
+                                class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-600 p-3 rounded-lg transition-colors"
+                                title="Upload Image/Doc">
+                                <i class="fas fa-paperclip"></i>
+                                <input type="file" id="chat-file" name="files" accept=".png,.jpg,.jpeg,.pdf,.txt"
+                                    class="hidden" onchange="handleFileSelect(this)">
+                            </label>
+                            <input type="text" id="chat-input" name="message" placeholder="Type your doubt here..."
+                                class="flex-grow bg-gray-100 border-0 rounded-lg px-4 focus:ring-2 focus:ring-blue-500 outline-none">
+                            <button type="submit"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-lg font-bold transition-colors">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function handleFileSelect(input) {
+                if (input.files && input.files[0]) {
+                    document.getElementById('file-preview').classList.remove('hidden');
+                    document.getElementById('filename-display').textContent = input.files[0].name;
+                }
+            }
+
+            function clearFile() {
+                document.getElementById('chat-file').value = '';
+                document.getElementById('file-preview').classList.add('hidden');
+            }
+
+            const chatForm = document.getElementById('chat-form');
+            const chatHistory = document.getElementById('chat-history');
+
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const input = document.getElementById('chat-input');
+                const fileInput = document.getElementById('chat-file');
+                const msg = input.value.trim();
+
+                if (!msg && fileInput.files.length === 0) return;
+
+                // User Message Bubble
+                const userDiv = document.createElement('div');
+                userDiv.className = 'flex gap-3 flex-row-reverse';
+                userDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center text-white text-xs"><i class="fas fa-user"></i></div>
+                    <div class="bg-blue-600 text-white p-3 rounded-2xl rounded-tr-none shadow-sm text-sm max-w-[80%]">
+                        ${msg} ${fileInput.files.length > 0 ? '<br><small class="opacity-75"><i class="fas fa-file"></i> File attached</small>' : ''}
+                    </div>
+                `;
+                chatHistory.appendChild(userDiv);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
+                // Prepare Data
+                const formData = new FormData();
+                formData.append('message', msg);
+                if (fileInput.files.length > 0) {
+                    formData.append('files', fileInput.files[0]);
+                }
+
+                // Clear Inputs
+                input.value = '';
+                clearFile();
+
+                // Loading Bubble
+                const loadDiv = document.createElement('div');
+                loadDiv.className = 'flex gap-3 loading-bubble';
+                loadDiv.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-white text-xs"><i class="fas fa-robot"></i></div>
+                    <div class="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm border border-gray-100">
+                        <i class="fas fa-circle-notch fa-spin text-blue-500"></i> Thinking...
+                    </div>
+                `;
+                chatHistory.appendChild(loadDiv);
+                chatHistory.scrollTop = chatHistory.scrollHeight;
+
+                try {
+                    const res = await fetch('/api/chat', { method: 'POST', body: formData });
+                    const data = await res.json();
+
+                    loadDiv.remove();
+
+                    // AI Response Bubble
+                    const aiDiv = document.createElement('div');
+                    aiDiv.className = 'flex gap-3';
+                    aiDiv.innerHTML = `
+                        <div class="w-8 h-8 rounded-full bg-blue-600 flex-shrink-0 flex items-center justify-center text-white text-xs"><i class="fas fa-robot"></i></div>
+                        <div class="bg-white p-4 rounded-2xl rounded-tl-none shadow-sm text-sm border border-gray-100 max-w-[85%] prose prose-sm">
+                            ${marked.parse(data.response || data.error)}
+                        </div>
+                    `;
+                    chatHistory.appendChild(aiDiv);
+                    chatHistory.scrollTop = chatHistory.scrollHeight;
+
+                } catch (err) {
+                    loadDiv.innerHTML = `<div class="text-red-500">Error connecting to AI.</div>`;
+                }
+            });
+        </script>
+    </div>
+
+    {% elif view == 'exam_arena' %}
+    <div class="fixed inset-0 z-50 bg-white flex flex-col h-screen overflow-hidden">
+
+        <div
+            class="bg-red-600 text-white px-4 py-2 text-center text-xs font-bold uppercase tracking-widest animate-pulse shadow-md z-50 flex justify-between items-center">
+            <span><i class="fas fa-exclamation-triangle mr-2"></i> Anti-Cheat Active</span>
+            <span>Do not switch tabs or minimize window</span>
+        </div>
+
+        <div class="flex-grow flex flex-col md:flex-row h-full">
+
+            <div class="md:w-1/2 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+                <div class="p-4 border-b bg-white shadow-sm flex justify-between items-center">
+                    <h2 class="font-bold text-lg text-slate-800"><i
+                            class="fas fa-book-reader text-blue-500 mr-2"></i>Study Notes</h2>
+                    <span class="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded">Read Carefully</span>
+                </div>
+                <div class="p-8 overflow-y-auto prose max-w-none flex-grow">
+                    {{ assign.ai_notes | safe }}
+                </div>
+            </div>
+
+            <div class="md:w-1/2 bg-white flex flex-col h-full relative">
+                <div class="p-4 border-b bg-slate-800 text-white flex justify-between items-center shadow-md">
+                    <div>
+                        <h2 class="font-bold">Exam Console</h2>
+                        <p class="text-xs text-gray-400">Assignment ID: #{{ assign.id }}</p>
+                    </div>
+                    <div class="bg-slate-700 px-4 py-2 rounded-lg border border-slate-600 font-mono text-xl font-bold text-yellow-400 shadow-inner"
+                        id="timer">
+                        20:00
+                    </div>
+                </div>
+
+                <div id="quiz-container" class="flex-grow overflow-y-auto p-6 space-y-8 bg-gray-50">
+                </div>
+
+                <div
+                    class="p-4 border-t bg-white flex justify-between items-center shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <div class="text-xs text-gray-500">
+                        <i class="fas fa-shield-alt text-green-500 mr-1"></i> Connection Secure
+                    </div>
+                    <button onclick="submitQuiz('COMPLETED')"
+                        class="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-lg font-bold shadow-lg transform active:scale-95 transition-all">
+                        SUBMIT EXAM
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script id="quiz-data-json" type="application/json">
+        {{ quiz_data | safe | default ('[]') }}
+    </script>
+    <script>
+        // --- DATA SETUP ---
+        const quizData = JSON.parse(document.getElementById('quiz-data-json').textContent);
+        const assignId = Number('{{ assign.id | default (0) }}');
+        let userAnswers = {};
+        let timeLeft = 20 * 60; // 20 minutes in seconds
+        let isCheated = false;
+
+        // --- RENDER QUIZ ---
+        const container = document.getElementById('quiz-container');
+
+        if (quizData.length === 0) {
+            container.innerHTML = '<div class="text-center p-10 text-red-500">Error loading questions. Please contact admin.</div>';
+        } else {
+            container.innerHTML = quizData.map((q, idx) => `
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:border-blue-300 transition-colors">
+                    <div class="flex gap-3 mb-4">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">${idx + 1}</span>
+                        <p class="font-bold text-gray-800 text-lg leading-relaxed">${q.q}</p>
+                    </div>
+                    
+                    <div class="grid gap-3 pl-11">
+                        ${q.options.map((opt, optIdx) => `
+                            <label class="flex items-center p-3 rounded-lg border border-gray-200 cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-all group">
+                                <input type="radio" name="q_${idx}" class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300" 
+                                    onchange="userAnswers[${idx}] = ${optIdx}; highlightCard(this)">
+                                <span class="ml-3 text-sm text-gray-600 group-hover:text-gray-900">${opt}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                    ${q.source ? `<div class="mt-3 text-[10px] text-gray-400 text-right uppercase tracking-wider">Source: ${q.source}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function highlightCard(input) {
+            // Visual feedback logic if needed
+        }
+
+        // --- SUBMISSION LOGIC ---
+        function submitQuiz(status) {
+            if (status === 'COMPLETED' && !confirm("Are you sure you want to submit?")) return;
+
+            let rawScore = 0;
+            quizData.forEach((q, idx) => {
+                if (userAnswers[idx] === q.correct_index) {
+                    rawScore++;
+                }
+            });
+
+            // Show Loading
+            document.body.innerHTML = `<div class="h-screen flex items-center justify-center bg-gray-100 flex-col"><i class="fas fa-circle-notch fa-spin text-4xl text-blue-600 mb-4"></i><h2 class="text-xl font-bold">Submitting Results...</h2></div>`;
+
+            fetch('/submit_exam', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    assign_id: assignId,
+                    raw_score: rawScore,
+                    total: quizData.length,
+                    status: status
+                })
+            })
+                .then(res => res.json())
+                .then(data => window.location.href = data.redirect)
+                .catch(err => alert("Submission failed. Check connection."));
+        }
+
+        // --- TIMER LOGIC ---
+        const timerEl = document.getElementById('timer');
+        const timerInt = setInterval(() => {
+            if (timeLeft <= 0) {
+                clearInterval(timerInt);
+                submitQuiz('COMPLETED');
+            } else {
+                timeLeft--;
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                timerEl.innerText = `${m}:${s < 10 ? '0' + s : s}`;
+                if (timeLeft < 60) timerEl.classList.add('text-red-500', 'animate-pulse');
+            }
+        }, 1000);
+
+        // --- ANTI-CHEAT SYSTEM ---
+
+        // 1. Tab Switching Detection
+        document.addEventListener("visibilitychange", () => {
+            if (document.hidden && !isCheated) {
+                triggerCheat("Tab Switching");
+            }
+        });
+
+        // 2. Blur Detection (Window lost focus)
+        window.addEventListener("blur", () => {
+            if (!isCheated) {
+                // Small buffer to prevent accidental triggers (e.g. notifications)
+                setTimeout(() => {
+                    if (document.activeElement.tagName === "IFRAME") return; // Ignore iframe clicks if any
+                    triggerCheat("Window minimized or lost focus");
+                }, 1000);
+            }
+        });
+
+        function triggerCheat(reason) {
+            isCheated = true;
+            clearInterval(timerInt);
+            alert(`⚠️ MALPRACTICE DETECTED ⚠️\n\nReason: ${reason}\n\nYour exam is being auto-submitted with a score of 0.`);
+            submitQuiz('CHEATING_DETECTED');
+        }
+
+        // Prevent Right Click & Copy
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('copy', e => e.preventDefault());
+        document.addEventListener('paste', e => e.preventDefault());
+
+    </script>
+    {% endif %}
+
+
+</body>
+
+</html>
